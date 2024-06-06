@@ -31,7 +31,7 @@ def task_detail_views(request, pk):
 
 def task_index(request):
     if request.method == "GET":
-        tasks = Task.objects.all()
+        tasks = Task.objects.filter(user_id=request.user["user_id"])
         tasks_list = list(tasks.values())
         return JsonResponse(tasks_list, safe=False)
     else:
@@ -40,7 +40,7 @@ def task_index(request):
 
 def task_show(request, pk):
     try:
-        task = Task.objects.get(pk=pk)
+        task = Task.objects.get(pk=pk, user_id=request.user["user_id"])
         return JsonResponse(task_to_dict(task))
     except Task.DoesNotExist:
         return JsonResponse({"error": "Task not found"}, status=404)
@@ -49,6 +49,8 @@ def task_show(request, pk):
 def task_create(request):
     if request.method == "POST":
         data = json.loads(request.body)
+        print(request.user)
+        data["user_id"] = request.user["user_id"]
         task = Task.objects.create(**data)
         return JsonResponse(task_to_dict(task))
     else:
@@ -57,7 +59,7 @@ def task_create(request):
 
 def task_update(request, pk):
     try:
-        task = Task.objects.get(pk=pk)
+        task = Task.objects.get(pk=pk, user_id=request.user["user_id"])
         data = json.loads(request.body)
         for key, value in data.items():
             setattr(task, key, value)
@@ -69,7 +71,7 @@ def task_update(request, pk):
 
 def task_delete(request, pk):
     try:
-        task = Task.objects.get(pk=pk)
+        task = Task.objects.get(pk=pk, user_id=request.user["user_id"])
         task.delete()
         return HttpResponse(status=204)
     except Task.DoesNotExist:
@@ -79,6 +81,7 @@ def task_delete(request, pk):
 def task_to_dict(task):
     return {
         "id": task.id,
+        "user_id": task.user_id,
         "title": task.title,
         "description": task.description,
         "complete": task.complete,

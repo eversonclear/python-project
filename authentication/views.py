@@ -6,15 +6,15 @@ from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 import jwt
 
+from datetime import datetime, timedelta, timezone
+
 
 @csrf_exempt
 def login_view(request):
     if request.method == "POST":
         data = json.loads(request.body)
-
-        print(data["password"], data["email"])
         user = User.objects.filter(email=data["email"]).first()
-        print("user", user is None)
+
         if user is None or not user.check_password(data["password"]):
             return JsonResponse({"error": "Invalid email or password"}, status=400)
         else:
@@ -50,12 +50,14 @@ def signup_view(request):
 def user_to_dict(user):
     return {
         "id": user.id,
-        "first_name": user.first_name,
-        "last_name": user.last_name,
         "email": user.email,
         "token": generate_token(user.id),
     }
 
 
-def generate_token(user_id):
-    return jwt.encode({"user": user_id}, settings.SECRET_KEY, algorithm="HS256")
+def generate_token(user_id, expiration_minutes=120):
+    expiration_time = datetime.now(timezone.utc) + timedelta(minutes=expiration_minutes)
+    payload = {"user_id": user_id, "exp": expiration_time}
+    token = jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
+
+    return token
