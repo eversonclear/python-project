@@ -2,9 +2,11 @@ import json
 from django.http import JsonResponse, HttpResponse
 from .models import Task
 from django.views.decorators.csrf import csrf_exempt
+from .decorators import authenticate_user
 
 
 @csrf_exempt
+@authenticate_user
 def task_views(request):
     if request.method == "GET":
         return task_index(request)
@@ -15,6 +17,7 @@ def task_views(request):
 
 
 @csrf_exempt
+@authenticate_user
 def task_detail_views(request, pk):
     if request.method == "GET":
         return task_show(request, pk)
