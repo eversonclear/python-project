@@ -2,6 +2,6 @@ from django.urls import path
 from .views import task_views, task_detail_views
 
 urlpatterns = [
-    path("tasks", task_views),
-    path("tasks/<int:pk>", task_detail_views),
+    path("tasks", task_views, name="task_views"),
+    path("tasks/<int:pk>", task_detail_views, name="task_detail_views"),
 ]

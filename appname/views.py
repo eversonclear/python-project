@@ -49,10 +49,10 @@ def task_show(request, pk):
 def task_create(request):
     if request.method == "POST":
         data = json.loads(request.body)
-        print(request.user)
+
         data["user_id"] = request.user["user_id"]
         task = Task.objects.create(**data)
-        return JsonResponse(task_to_dict(task))
+        return JsonResponse(task_to_dict(task), status=201)
     else:
         return JsonResponse({"error": "Method not allowed"}, status=405)
 
