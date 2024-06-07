@@ -42,7 +42,7 @@ def signup_view(request):
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=400)
 
-        return JsonResponse(user_to_dict(user))
+        return JsonResponse(user_to_dict(user), status=201)
     else:
         return JsonResponse({"error": "Method not allowed"}, status=405)
 
