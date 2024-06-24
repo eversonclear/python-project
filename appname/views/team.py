@@ -45,7 +45,6 @@ def team_create(request):
 
 
 def team_index(request):
-    print("caiu aq")
     teams = Team.objects.filter(
         team_members__user_id=request.user["user_id"]
     ).distinct()
@@ -86,6 +85,7 @@ def team_delete(request, pk):
 def team_to_dict(team):
     return {
         "id": team.id,
+        "name": team.name,
         "created_at": team.created_at,
         "updated_at": team.updated_at,
     }
