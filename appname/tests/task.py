@@ -1,7 +1,7 @@
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth.models import User
-from appname.models.tasks import Task
+from appname.models.task import Task
 import json
 
 import jwt

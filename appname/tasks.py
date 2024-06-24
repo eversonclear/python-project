@@ -7,7 +7,7 @@ from django.contrib.auth.models import User
 
 @shared_task
 def task_after_confirmed(task_id):
-    from appname.models.tasks import Task
+    from appname.models.task import Task
 
     task = Task.objects.get(pk=task_id)
     user = User.objects.get(pk=task.user_id)
