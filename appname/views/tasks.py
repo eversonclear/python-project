@@ -1,8 +1,8 @@
 import json
 from django.http import JsonResponse, HttpResponse
-from .models import Task
+from appname.models.tasks import Task
 from django.views.decorators.csrf import csrf_exempt
-from .decorators import authenticate_user
+from authentication.decorators import authenticate_user
 
 
 @csrf_exempt
