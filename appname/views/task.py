@@ -4,6 +4,15 @@ from appname.models.task import Task
 from django.views.decorators.csrf import csrf_exempt
 from authentication.decorators import authenticate_user
 
+from appname.elasticsearch_client import (
+    search_tasks,
+    index_task,
+    create_index,
+    delete_index_task,
+)
+
+create_index("tasks")
+
 
 @csrf_exempt
 @authenticate_user
@@ -30,12 +39,15 @@ def task_detail_views(request, pk):
 
 
 def task_index(request):
-    if request.method == "GET":
+    query = request.GET.get("query", "")
+
+    if query:
+        tasks = search_tasks(query, request.user["user_id"])
+        tasks_list = [task["_source"] for task in tasks]
+    else:
         tasks = Task.objects.filter(user_id=request.user["user_id"])
         tasks_list = list(tasks.values())
-        return JsonResponse(tasks_list, safe=False)
-    else:
-        return JsonResponse({"error": "Method not allowed"}, status=405)
+    return JsonResponse(tasks_list, safe=False)
 
 
 def task_show(request, pk):
@@ -52,6 +64,8 @@ def task_create(request):
 
         data["user_id"] = request.user["user_id"]
         task = Task.objects.create(**data)
+        index_task(task)
+
         return JsonResponse(task_to_dict(task), status=201)
     else:
         return JsonResponse({"error": "Method not allowed"}, status=405)
@@ -64,6 +78,8 @@ def task_update(request, pk):
         for key, value in data.items():
             setattr(task, key, value)
         task.save()
+        index_task(task)
+
         return JsonResponse(task_to_dict(task))
     except Task.DoesNotExist:
         return JsonResponse({"error": "Task not found"}, status=404)
@@ -73,6 +89,8 @@ def task_delete(request, pk):
     try:
         task = Task.objects.get(pk=pk, user_id=request.user["user_id"])
         task.delete()
+        delete_index_task(pk)
+
         return HttpResponse(status=204)
     except Task.DoesNotExist:
         return JsonResponse({"error": "Task not found"}, status=404)
