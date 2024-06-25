@@ -2,6 +2,7 @@ from authentication.decorators import authenticate_user
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from appname.models.team import Team
+from appname.models.team_member import Role
 import json
 
 from django.db import transaction
@@ -37,7 +38,9 @@ def team_create(request):
 
         with transaction.atomic():
             team = Team.objects.create(**data)
-            team.team_members.create(user_id=request.user["user_id"], role="owner")
+            team.team_members.create(
+                user_id=request.user["user_id"], role=Role.ADMIN.value
+            )
 
         return JsonResponse(team_to_dict(team), status=201)
     except Exception as e:

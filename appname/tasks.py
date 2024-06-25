@@ -28,7 +28,7 @@ def send_invitation_email(invitation_id):
 
     send_mail(
         "Convite para o time",
-        f"Olá, você foi convidado para o time {invitation.team.name}. Acesse o link para aceitar o convite: http://localhost:3000/team_invitations/{invitation.token}/accept",
+        f"Olá, você foi convidado para o time {invitation.team.name}. Acesse o link para aceitar o convite: http://localhost:8000/api/team_invitations/{invitation.token}/accept",
         settings.DEFAULT_FROM_EMAIL,
         [invitation.email],
     )

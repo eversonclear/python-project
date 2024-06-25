@@ -17,8 +17,10 @@ class Status(Enum):
 
 class TeamInvitation(models.Model):
     email = models.EmailField()
-    token = models.CharField(max_length=255)
-    team = models.ForeignKey(Team, on_delete=models.CASCADE)
+    token = models.CharField(max_length=255, null=True)
+    team = models.ForeignKey(
+        Team, on_delete=models.CASCADE, related_name="team_invitations"
+    )
     status = models.CharField(
         max_length=8,
         choices=[(tag.value, tag.name) for tag in Status],

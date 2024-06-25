@@ -5,7 +5,6 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from authentication.decorators import authenticate_user
 from django.conf import settings
-
 from django.contrib.auth.models import User
 
 from django.db import transaction
@@ -35,23 +34,34 @@ def team_invitation_accepted_view(request, invitation_token):
 
     try:
         with transaction.atomic():
-            if User.exists(email=token_data["email"]):
-                user = User.objects.get(email=token_data["email"])
+            user = User.objects.filter(email=token_data["email"])
+
+            if not user.exists():
+                user = User.objects.create(
+                    email=token_data["email"], username=token_data["email"]
+                )
             else:
-                user = User.objects.create(email=token_data["email"])
+                user = user.first()
 
             team = Team.objects.get(pk=token_data["team_id"])
-            team.team_members.create(user=user, role="MEMBER")
+            if team.team_members.filter(user=user).exists():
+                return JsonResponse(
+                    {"error": "User is already a member of the team"}, status=400
+                )
+
+            team.team_members.create(user=user, role=Role.MEMBER.value)
 
             team_invitation = TeamInvitation.objects.get(pk=token_data["invitation_id"])
             team_invitation.status = "ACCEPTED"
             team_invitation.save()
+        return JsonResponse({"message": "Invitation accepted"}, status=200)
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=400)
 
 
 def team_invitation_create(request, team):
     try:
+        print("team id", team.id)
         data = request.body and json.loads(request.body) or {}
         email = data.get("email")
 
@@ -59,13 +69,13 @@ def team_invitation_create(request, team):
             user_id=request.user["user_id"], role=Role.ADMIN.value
         )
 
-        team_invitation = team.team_invitations.create(
-            email=email,
-            team=team,
-            token=generate_invitation_token(
-                current_team_member.team_id, email, team_invitation.id
-            ),
+        team_invitation = team.team_invitations.create(email=email, team=team)
+
+        team_invitation.token = generate_invitation_token(
+            current_team_member.team_id, email, team_invitation.id
         )
+
+        team_invitation.save()
 
         return JsonResponse(team_invitation_to_dict(team_invitation), status=201)
     except TeamMember.DoesNotExist:
@@ -88,7 +98,7 @@ def team_invitation_to_dict(team_invitation):
 
 
 def generate_invitation_token(team_id, email, invitation_id):
-    jwt.encode(
+    return jwt.encode(
         {"team_id": team_id, "email": email, "invitation_id": invitation_id},
         settings.SECRET_KEY,
         algorithm="HS256",
