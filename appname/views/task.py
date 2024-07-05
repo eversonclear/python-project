@@ -4,6 +4,8 @@ from appname.models.task import Task
 from django.views.decorators.csrf import csrf_exempt
 from authentication.decorators import authenticate_user
 
+from django.core.exceptions import ValidationError
+
 from appname.elasticsearch_client import (
     search_tasks,
     index_task,
@@ -59,16 +61,19 @@ def task_show(request, pk):
 
 
 def task_create(request):
-    if request.method == "POST":
+    try:
         data = json.loads(request.body)
 
         data["user_id"] = request.user["user_id"]
-        task = Task.objects.create(**data)
-        index_task(task)
+        task = Task(**data)
+        task.full_clean()
+        task.save()
 
         return JsonResponse(task_to_dict(task), status=201)
-    else:
-        return JsonResponse({"error": "Method not allowed"}, status=405)
+    except ValidationError as e:
+        return JsonResponse({"error": e.message_dict}, status=400)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=400)
 
 
 def task_update(request, pk):
@@ -77,10 +82,13 @@ def task_update(request, pk):
         data = json.loads(request.body)
         for key, value in data.items():
             setattr(task, key, value)
+        task.full_clean()
         task.save()
         index_task(task)
 
         return JsonResponse(task_to_dict(task))
+    except ValidationError as e:
+        return JsonResponse({"error": e.message_dict}, status=400)
     except Task.DoesNotExist:
         return JsonResponse({"error": "Task not found"}, status=404)
 

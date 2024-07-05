@@ -4,12 +4,26 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from ..tasks import task_after_confirmed
+from django.core.exceptions import ValidationError
+
+
+def validate_title(value):
+    print("validate_title", value)
+    if not value:
+        raise ValidationError("Title cannot be blank.")
+
+
+def validate_description(value):
+    if not value:
+        raise ValidationError("Description cannot be blank.")
+    if len(value) < 5:
+        raise ValidationError("Description must be at least 5 characters.")
 
 
 class Task(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    title = models.CharField(max_length=200)
-    description = models.CharField(max_length=500)
+    title = models.CharField(max_length=200, validators=[validate_title])
+    description = models.CharField(max_length=500, validators=[validate_description])
     complete = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

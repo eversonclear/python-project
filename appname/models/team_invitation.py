@@ -8,6 +8,20 @@ from django.dispatch import receiver
 
 from ..tasks import send_invitation_email
 
+from django.core.exceptions import ValidationError
+
+
+def validate_team(value):
+    if not value:
+        raise ValidationError("Team cannot be blank.")
+    if not Team.objects.filter(id=value).exists():
+        raise ValidationError("Team does not exist.")
+
+
+def validate_email(value):
+    if not value:
+        raise ValidationError("Email cannot be blank.")
+
 
 class Status(Enum):
     PENDING = "pending"
@@ -16,10 +30,13 @@ class Status(Enum):
 
 
 class TeamInvitation(models.Model):
-    email = models.EmailField()
+    email = models.EmailField(validators=[validate_email])
     token = models.CharField(max_length=255, null=True)
     team = models.ForeignKey(
-        Team, on_delete=models.CASCADE, related_name="team_invitations"
+        Team,
+        on_delete=models.CASCADE,
+        related_name="team_invitations",
+        validators=[validate_team],
     )
     status = models.CharField(
         max_length=8,
